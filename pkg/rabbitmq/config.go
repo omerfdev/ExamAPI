@@ -1,8 +1,8 @@
 package rabbitmq
 
 import (
-	"ProducerAPI/src/configs"
-	"ProducerAPI/src/pkg/utils"
+	"exam-api/configs"
+	"exam-api/pkg/utils"
 )
 
 type MQConfig struct {
