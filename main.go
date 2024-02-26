@@ -1,56 +1,55 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
 	"time"
-	"C:\Users\omerf\OneDrive\Desktop\exam-api\Handler"
+
 	"github.com/gorilla/mux"
-	"C:\Users\omerf\OneDrive\Desktop\exam-api\pkg\Utils\helper.go"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"exam-api/configs"
+	"exam-api/repository"
+	"exam-api/handler"
 )
 
-
-
 func main() {
+	// MongoDB yapılandırması
+	config := configs.Configs["local-qa"]
+	clientOptions := options.Client().ApplyURI(config.URI)
+	client, err := mongo.NewClient(clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err = client.Connect(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Disconnect(ctx)
+
+	db := client.Database(config.Database)
+	categoryCollection := db.Collection(config.Collection)
+
+	categoryRepo := &repository.CategoryRepository{DB: categoryCollection}
+	categoryHandler := handler.NewCategoryHandler(categoryRepo)
+
 	r := mux.NewRouter()
-	env := utils.GetGoEnv()
+	r.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
+	r.HandleFunc("/categories/{id}", categoryHandler.UpdateCategory).Methods("PUT")
+	r.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
+	r.HandleFunc("/categories", categoryHandler.GetAllCategories).Methods("GET")
+	r.HandleFunc("/categories/{id}", categoryHandler.GetCategoryByID).Methods("GET")
 
-	fmt.Println("Exam API running on \"" + env + "\" environment.")
-	producer.Execute(env)
+	http.Handle("/", r)
 
-	r.HandleFunc("/questions", getQuestions).Methods("GET")
-	r.HandleFunc("/questions/{id}", getQuestion).Methods("GET")
-	r.HandleFunc("/questions", createQuestion).Methods("POST")
-	r.HandleFunc("/questions/{id}", updateQuestion).Methods("PUT")
-	r.HandleFunc("/questions/{id}", deleteQuestion).Methods("DELETE")
-
-	r.HandleFunc("/categories", getCategories).Methods("GET")
-	r.HandleFunc("/categories/{id}", getCategory).Methods("GET")
-	r.HandleFunc("/categories", createCategory).Methods("POST")
-	r.HandleFunc("/categories/{id}", updateCategory).Methods("PUT")
-	r.HandleFunc("/categories/{id}", deleteCategory).Methods("DELETE")
-
-	r.HandleFunc("/questionoptions", GetQuestionOptions).Methods("GET")
-	r.HandleFunc("/questionoptions/{id}", GetQuestionOption).Methods("GET")
-	r.HandleFunc("/questionoptions", CreateQuestionOption).Methods("POST")
-	r.HandleFunc("/questionoptions/{id}", UpdateQuestionOption).Methods("PUT")
-	r.HandleFunc("/questionoptions/{id}", DeleteQuestionOption).Methods("DELETE")
-
-	r.HandleFunc("/users", GetUsers).Methods("GET")
-	r.HandleFunc("/users/{id}", GetUser).Methods("GET")
-	r.HandleFunc("/users", CreateUser).Methods("POST")
-	r.HandleFunc("/users/{id}", UpdateUser).Methods("PUT")
-	r.HandleFunc("/users/{id}", DeleteUser).Methods("DELETE")
-
-	r.HandleFunc("/userexams", GetUserExams).Methods("GET")
-	r.HandleFunc("/userexams/{id}", GetUserExam).Methods("GET")
-	r.HandleFunc("/userexams", CreateUserExam).Methods("POST")
-	r.HandleFunc("/userexams/{id}", UpdateUserExam).Methods("PUT")
-	r.HandleFunc("/userexams/{id}", DeleteUserExam).Methods("DELETE")
-
-	r.HandleFunc("/exams", GetExams).Methods("GET")
-	r.HandleFunc("/exams/{id}", GetExam).Methods("GET")
-	r.HandleFunc("/exams", CreateExam).Methods("POST")
-	r.HandleFunc("/exams/{id}", UpdateExam).Methods("PUT")
-	r.HandleFunc("/exams/{id}", DeleteExam).Methods("DELETE")
-
-	http.ListenAndServe(":8000", r)
+	// Sunucuyu başlat
+	port := ":8080"
+	fmt.Printf("Server listening on port %s...\n", port)
+	log.Fatal(http.ListenAndServe(port, nil))
 }

@@ -1,78 +1,116 @@
-package main
+package handler
 
 import (
+	"context"
 	"encoding/json"
+	"exam-api/model"
+	"exam-api/repository"
 	"net/http"
 	"strconv"
-	"exam-api/model"
+
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
-func CreateQuestionOption(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
-	var questionOption model.QuestionOption
-	json.NewDecoder(r.Body).Decode(&questionOption)
-
-	db.Create(&questionOption)
-
-	respondWithJson(w, http.StatusCreated, questionOption)
+type QuestionOptionHandler struct {
+	Repo *repository.QuestionOptionRepository
 }
 
-func GetQuestionOption(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *QuestionOptionHandler) CreateQuestionOption(w http.ResponseWriter, r *http.Request) {
+	var option model.QuestionOption
+	err := json.NewDecoder(r.Body).Decode(&option)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
+	ctx := context.Background()
+	err = h.Repo.InsertOne(ctx, option)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *QuestionOptionHandler) UpdateQuestionOption(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, "Invalid option ID", http.StatusBadRequest)
+		return
+	}
 
-	var questionOption model.QuestionOption
-	db.First(&questionOption, id)
+	var option model.QuestionOption
+	err = json.NewDecoder(r.Body).Decode(&option)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	respondWithJson(w, http.StatusOK, questionOption)
+	ctx := context.Background()
+	updated, err := h.Repo.UpdateOne(ctx, uint(id), option)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !updated {
+		http.Error(w, "Option not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
-func GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
-	var questionOptions []model.QuestionOption
-	db.Find(&questionOptions)
-
-	respondWithJson(w, http.StatusOK, questionOptions)
-}
-
-func UpdateQuestionOption(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
+func (h *QuestionOptionHandler) DeleteQuestionOption(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, "Invalid option ID", http.StatusBadRequest)
+		return
+	}
 
-	var questionOption model.QuestionOption
-	json.NewDecoder(r.Body).Decode(&questionOption)
+	ctx := context.Background()
+	err = h.Repo.DeleteOne(ctx, uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	db.First(&questionOption, id)
-	db.Save(&questionOption)
-
-	respondWithJson(w, http.StatusOK, questionOption)
+	w.WriteHeader(http.StatusOK)
 }
 
-func DeleteQuestionOption(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
+func (h *QuestionOptionHandler) GetQuestionOptionByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, "Invalid option ID", http.StatusBadRequest)
+		return
+	}
 
-	var questionOption model.QuestionOption
-	db.First(&questionOption, id)
-	db.Delete(&questionOption)
+	ctx := context.Background()
+	option, err := h.Repo.GetByID(ctx, uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
+	if option == nil {
+		http.Error(w, "Option not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(option)
 }
 
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
+func (h *QuestionOptionHandler) GetAllQuestionOptions(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	options, err := h.Repo.GetAll(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(options)
 }
- 

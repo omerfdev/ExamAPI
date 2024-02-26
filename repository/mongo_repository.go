@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-
 type CategoryRepository struct {
 	DB *mongo.Collection
 }
@@ -82,10 +81,24 @@ func (r *CategoryRepository) GetByID(ctx context.Context, id uint) (*model.Categ
 
 	return &category, nil
 }
+func (r *CategoryRepository) GetFirstOrDefault(ctx context.Context, filter bson.M) (*model.Category, error) {
+	var category model.Category
+	err := r.DB.FindOne(ctx, filter).Decode(&category)
+	if err != nil {
+		// MongoDB'de belirtilen kriterlere uyan belge bulunamadığında nil döndürülebilir.
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, errors.New(fmt.Sprintf("GetFirstOrDefault failed: %v", err))
+	}
+
+	return &category, nil
+}
 
 type QuestionRepository struct {
 	DB *mongo.Collection
 }
+
 func (r *QuestionRepository) InsertOne(ctx context.Context, insertModel model.Question) error {
 	_, err := r.DB.InsertOne(ctx, insertModel)
 	if err != nil {
@@ -147,7 +160,19 @@ func (r *QuestionRepository) GetByID(ctx context.Context, id uint) (*model.Quest
 
 	return &question, nil
 }
+func (r *QuestionRepository) GetFirstOrDefault(ctx context.Context, filter bson.M) (*model.Question, error) {
+	var question model.Question
+	err := r.DB.FindOne(ctx, filter).Decode(&question)
+	if err != nil {
+		// MongoDB'de belirtilen kriterlere uyan belge bulunamadığında nil döndürülebilir.
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, errors.New(fmt.Sprintf("GetFirstOrDefault failed: %v", err))
+	}
 
+	return &question, nil
+}
 
 type QuestionOptionRepository struct {
 	DB *mongo.Collection
@@ -216,11 +241,24 @@ func (r *QuestionOptionRepository) GetByID(ctx context.Context, id uint) (*model
 
 	return &questionOption, nil
 }
+func (r *QuestionOptionRepository) GetFirstOrDefault(ctx context.Context, filter bson.M) (*model.QuestionOption, error) {
+	var questionOption model.QuestionOption
+	err := r.DB.FindOne(ctx, filter).Decode(&questionOption)
+	if err != nil {
+		// MongoDB'de belirtilen kriterlere uyan belge bulunamadığında nil döndürülebilir.
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, errors.New(fmt.Sprintf("GetFirstOrDefault failed: %v", err))
+	}
 
+	return &questionOption, nil
+}
 
 type UserRepository struct {
 	DB *mongo.Collection
 }
+
 func (r *UserRepository) InsertOne(ctx context.Context, insertModel model.User) error {
 	_, err := r.DB.InsertOne(ctx, insertModel)
 	if err != nil {
@@ -285,11 +323,24 @@ func (r *UserRepository) GetByID(ctx context.Context, id uint) (*model.User, err
 
 	return &user, nil
 }
+func (r *UserRepository) GetFirstOrDefault(ctx context.Context, filter bson.M) (*model.User, error) {
+	var user model.User
 
+	err := r.DB.FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil // Belirtilen filtre ile eşleşen belge bulunamadı
+		}
+		return nil, errors.New(fmt.Sprintf("GetFirstOrDefault failed: %v", err))
+	}
+
+	return &user, nil
+}
 
 type UserExamRepository struct {
 	DB *mongo.Collection
 }
+
 func (r *UserExamRepository) InsertOne(ctx context.Context, insertModel model.UserExam) error {
 	_, err := r.DB.InsertOne(ctx, insertModel)
 	if err != nil {
@@ -354,12 +405,24 @@ func (r *UserExamRepository) GetByID(ctx context.Context, id uint) (*model.UserE
 
 	return &userExam, nil
 }
+func (r *UserExamRepository) GetFirstOrDefault(ctx context.Context, filter bson.M) (*model.UserExam, error) {
+	var userExam model.UserExam
 
+	err := r.DB.FindOne(ctx, filter).Decode(&userExam)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil // Belirtilen filtre ile eşleşen belge bulunamadı
+		}
+		return nil, errors.New(fmt.Sprintf("GetFirstOrDefault failed: %v", err))
+	}
 
+	return &userExam, nil
+}
 
 type ExamRepository struct {
 	DB *mongo.Collection
 }
+
 func (r *ExamRepository) InsertOne(ctx context.Context, insertModel model.Exam) error {
 	_, err := r.DB.InsertOne(ctx, insertModel)
 	if err != nil {
@@ -413,7 +476,6 @@ func (r *ExamRepository) GetAll(ctx context.Context) ([]model.Exam, error) {
 
 	return exams, nil
 }
-
 func (r *ExamRepository) GetByID(ctx context.Context, id uint) (*model.Exam, error) {
 	var exam model.Exam
 
@@ -421,6 +483,19 @@ func (r *ExamRepository) GetByID(ctx context.Context, id uint) (*model.Exam, err
 	err := r.DB.FindOne(ctx, filter).Decode(&exam)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("GetByID failed: %v", err))
+	}
+
+	return &exam, nil
+}
+func (r *ExamRepository) GetFirstOrDefault(ctx context.Context, filter bson.M) (*model.Exam, error) {
+	var exam model.Exam
+
+	err := r.DB.FindOne(ctx, filter).Decode(&exam)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil // Belirtilen filtre ile eşleşen belge bulunamadı
+		}
+		return nil, errors.New(fmt.Sprintf("GetFirstOrDefault failed: %v", err))
 	}
 
 	return &exam, nil

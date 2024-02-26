@@ -1,78 +1,114 @@
-package main
+package handler
 
 import (
 	"encoding/json"
 	"exam-api/model"
+	"exam-api/repository"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
-func CreateQuestion(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+type QuestionHandler struct {
+	Repo *repository.QuestionRepository
+}
+
+func NewQuestionHandler(repo *repository.QuestionRepository) *QuestionHandler {
+	return &QuestionHandler{Repo: repo}
+}
+
+func (h *QuestionHandler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
+	var question model.Question
+	err := json.NewDecoder(r.Body).Decode(&question)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.Repo.InsertOne(r.Context(), question)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *QuestionHandler) UpdateQuestion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid question ID", http.StatusBadRequest)
+		return
+	}
 
 	var question model.Question
-	json.NewDecoder(r.Body).Decode(&question)
+	err = json.NewDecoder(r.Body).Decode(&question)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	db.Create(&question)
+	updated, err := h.Repo.UpdateOne(r.Context(), uint(id), question)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	respondWithJson(w, http.StatusCreated, question)
+	if !updated {
+		http.Error(w, "No document found to update", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
-func GetQuestion(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *QuestionHandler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid question ID", http.StatusBadRequest)
+		return
+	}
 
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	err = h.Repo.DeleteOne(r.Context(), uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	var question model.Question
-	db.First(&question, id)
-
-	respondWithJson(w, http.StatusOK, question)
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func GetQuestions(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *QuestionHandler) GetAllQuestions(w http.ResponseWriter, r *http.Request) {
+	questions, err := h.Repo.GetAll(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	var questions []model.Question
-	db.Find(&questions)
-
-	respondWithJson(w, http.StatusOK, questions)
+	json.NewEncoder(w).Encode(questions)
 }
 
-func UpdateQuestion(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *QuestionHandler) GetQuestionByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid question ID", http.StatusBadRequest)
+		return
+	}
 
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	question, err := h.Repo.GetByID(r.Context(), uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	var question model.Question
-	json.NewDecoder(r.Body).Decode(&question)
+	if question == nil {
+		http.Error(w, "Question not found", http.StatusNotFound)
+		return
+	}
 
-	db.First(&question, id)
-	db.Save(&question)
-
-	respondWithJson(w, http.StatusOK, question)
-}
-
-func DeleteQuestion(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
-
-	var question model.Question
-	db.First(&question, id)
-	db.Delete(&question)
-
-	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
-}
-
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
+	json.NewEncoder(w).Encode(question)
 }

@@ -1,78 +1,114 @@
-package main
+package handler
 
 import (
 	"encoding/json"
 	"exam-api/model"
+	"exam-api/repository"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
-func CreateExam(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+type ExamHandler struct {
+	Repo *repository.ExamRepository
+}
+
+func NewExamHandler(repo *repository.ExamRepository) *ExamHandler {
+	return &ExamHandler{Repo: repo}
+}
+
+func (h *ExamHandler) CreateExam(w http.ResponseWriter, r *http.Request) {
+	var exam model.Exam
+	err := json.NewDecoder(r.Body).Decode(&exam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.Repo.InsertOne(r.Context(), exam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *ExamHandler) UpdateExam(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid exam ID", http.StatusBadRequest)
+		return
+	}
 
 	var exam model.Exam
-	json.NewDecoder(r.Body).Decode(&exam)
+	err = json.NewDecoder(r.Body).Decode(&exam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	db.Create(&exam)
+	updated, err := h.Repo.UpdateOne(r.Context(), uint(id), exam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	respondWithJson(w, http.StatusCreated, exam)
+	if !updated {
+		http.Error(w, "No document found to update", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
-func GetExam(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *ExamHandler) DeleteExam(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid exam ID", http.StatusBadRequest)
+		return
+	}
 
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	err = h.Repo.DeleteOne(r.Context(), uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	var exam model.Exam
-	db.First(&exam, id)
-
-	respondWithJson(w, http.StatusOK, exam)
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func GetExams(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *ExamHandler) GetAllExams(w http.ResponseWriter, r *http.Request) {
+	exams, err := h.Repo.GetAll(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	var exams []model.Exam
-	db.Find(&exams)
-
-	respondWithJson(w, http.StatusOK, exams)
+	json.NewEncoder(w).Encode(exams)
 }
 
-func UpdateExam(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *ExamHandler) GetExamByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid exam ID", http.StatusBadRequest)
+		return
+	}
 
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	exam, err := h.Repo.GetByID(r.Context(), uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	var exam model.Exam
-	json.NewDecoder(r.Body).Decode(&exam)
+	if exam == nil {
+		http.Error(w, "Exam not found", http.StatusNotFound)
+		return
+	}
 
-	db.First(&exam, id)
-	db.Save(&exam)
-
-	respondWithJson(w, http.StatusOK, exam)
-}
-
-func DeleteExam(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
-
-	var exam model.Exam
-	db.First(&exam, id)
-	db.Delete(&exam)
-
-	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
-}
-
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
+	json.NewEncoder(w).Encode(exam)
 }

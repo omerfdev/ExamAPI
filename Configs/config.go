@@ -3,16 +3,16 @@ package configs
 var ac AppConfig
 
 type AppConfig struct {
-	MongoConnectionURI     string
-	CustomerDBName         string
-	CustomerCollectionName string
+	URI     string
+	Database         string
+	Collection string
 }
 
 func SetConfigs(env string) {
 	ac = AppConfig{
-		MongoConnectionURI:     Configs[env].MongoConnectionURI,
-		CustomerDBName:         Configs[env].CustomerDBName,
-		CustomerCollectionName: Configs[env].CustomerCollectionName,
+		URI:     Configs[env].URI,
+		Database:         Configs[env].Database,
+		Collection: Configs[env].Collection,
 	}
 }
 

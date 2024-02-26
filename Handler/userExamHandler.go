@@ -1,90 +1,116 @@
-package main
+package handler
 
 import (
+	"context"
 	"encoding/json"
+	"exam-api/model"
+	"exam-api/repository"
 	"net/http"
 	"strconv"
-	"exam-api/model"
+
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
+type UserExamHandler struct {
+	Repo *repository.UserExamRepository
+}
 
-func CreateUserExam(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *UserExamHandler) CreateUserExam(w http.ResponseWriter, r *http.Request) {
+	var userExam model.UserExam
+	err := json.NewDecoder(r.Body).Decode(&userExam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+	err = h.Repo.InsertOne(ctx, userExam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *UserExamHandler) UpdateUserExam(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, "Invalid user exam ID", http.StatusBadRequest)
+		return
+	}
 
 	var userExam model.UserExam
-	json.NewDecoder(r.Body).Decode(&userExam)
+	err = json.NewDecoder(r.Body).Decode(&userExam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	db.Create(&userExam)
+	ctx := context.Background()
+	updated, err := h.Repo.UpdateOne(ctx, uint(id), userExam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	respondWithJson(w, http.StatusCreated, userExam)
+	if !updated {
+		http.Error(w, "User exam not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
-func GetUserExam(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
+func (h *UserExamHandler) DeleteUserExam(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, "Invalid user exam ID", http.StatusBadRequest)
+		return
+	}
 
-	var userExam model.UserExam
-	db.First(&userExam, id)
+	ctx := context.Background()
+	err = h.Repo.DeleteOne(ctx, uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	respondWithJson(w, http.StatusOK, userExam)
+	w.WriteHeader(http.StatusOK)
 }
 
-func GetUserExams(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
-	var userExams []model.UserExam
-	db.Find(&userExams)
-
-	respondWithJson(w, http.StatusOK, userExams)
-}
-
-func RemoveUserExam(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
+func (h *UserExamHandler) GetUserExamByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, "Invalid user exam ID", http.StatusBadRequest)
+		return
+	}
 
-	var userExam model.UserExam
-	db.First(&userExam, id)
-	db.Delete(&userExam)
+	ctx := context.Background()
+	userExam, err := h.Repo.GetByID(ctx, uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
+	if userExam == nil {
+		http.Error(w, "User exam not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(userExam)
 }
 
-func GetExamsByStudentId(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *UserExamHandler) GetAllUserExams(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	userExams, err := h.Repo.GetAll(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	params := mux.Vars(r)
-	studentId, _ := strconv.Atoi(params["studentId"])
-
-	var userExams []model.UserExam
-	db.Find(&userExams, "user_id = ?", studentId)
-
-	respondWithJson(w, http.StatusOK, userExams)
-}
-
-func UpdateExamUser(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
-
-	var userExam model.UserExam
-	json.NewDecoder(r.Body).Decode(&userExam)
-
-	db.First(&userExam, id)
-	db.Save(&userExam)
-
-	respondWithJson(w, http.StatusOK, userExam)
-}
-
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
+	json.NewEncoder(w).Encode(userExams)
 }

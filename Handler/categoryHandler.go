@@ -1,78 +1,116 @@
-package main
+package handler
 
 import (
 	"encoding/json"
 	"exam-api/model"
+	"exam-api/repository"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
-func GetCategories(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
-
-	var categories []model.Category
-	db.Find(&categories)
-
-	respondWithJson(w, http.StatusOK, categories)
+type CategoryHandler struct {
+	Repo *repository.CategoryRepository
 }
 
-func GetCategory(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func NewCategoryHandler(repo *repository.CategoryRepository) *CategoryHandler {
+	return &CategoryHandler{Repo: repo}
+}
 
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	var category model.Category
+	err := json.NewDecoder(r.Body).Decode(&category)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.Repo.InsertOne(r.Context(), category)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		return
+	}
 
 	var category model.Category
-	db.First(&category, id)
+	err = json.NewDecoder(r.Body).Decode(&category)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	respondWithJson(w, http.StatusOK, category)
+	updated, err := h.Repo.UpdateOne(r.Context(), uint(id), category)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !updated {
+		http.Error(w, "No document found to update", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
-func CreateCategory(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		return
+	}
 
-	var category model.Category
-	json.NewDecoder(r.Body).Decode(&category)
+	err = h.Repo.DeleteOne(r.Context(), uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	db.Create(&category)
-
-	respondWithJson(w, http.StatusCreated, category)
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func UpdateCategory(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *CategoryHandler) GetAllCategories(w http.ResponseWriter, r *http.Request) {
+	categories, err := h.Repo.GetAll(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
-
-	var category model.Category
-	json.NewDecoder(r.Body).Decode(&category)
-
-	db.First(&category, id)
-	db.Save(&category)
-
-	respondWithJson(w, http.StatusOK, category)
+	json.NewEncoder(w).Encode(categories)
 }
 
-func DeleteCategory(w http.ResponseWriter, r *http.Request) {
-	db := r.Context().Value("db").(*gorm.DB)
+func (h *CategoryHandler) GetCategoryByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		return
+	}
 
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	category, err := h.Repo.GetByID(r.Context(), uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	var category model.Category
-	db.First(&category, id)
-	db.Delete(&category)
+	if category == nil {
+		http.Error(w, "Category not found", http.StatusNotFound)
+		return
+	}
 
-	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
+	json.NewEncoder(w).Encode(category)
 }
 
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
-}
+// Diğer HTTP işlevleri buraya eklenebilir...
