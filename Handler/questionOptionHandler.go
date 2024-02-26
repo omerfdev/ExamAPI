@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types\models.go"
+"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
-func GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
+func CreateQuestionOption(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var questionOptions []QuestionOption
-	db.Find(&questionOptions)
+	var questionOption QuestionOption
+	json.NewDecoder(r.Body).Decode(&questionOption)
 
-	respondWithJson(w, http.StatusOK, questionOptions)
+	db.Create(&questionOption)
+
+	respondWithJson(w, http.StatusCreated, questionOption)
 }
 
 func GetQuestionOption(w http.ResponseWriter, r *http.Request) {
@@ -30,15 +32,13 @@ func GetQuestionOption(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, questionOption)
 }
 
-func CreateQuestionOption(w http.ResponseWriter, r *http.Request) {
+func GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var questionOption QuestionOption
-	json.NewDecoder(r.Body).Decode(&questionOption)
+	var questionOptions []QuestionOption
+	db.Find(&questionOptions)
 
-	db.Create(&questionOption)
-
-	respondWithJson(w, http.StatusCreated, questionOption)
+	respondWithJson(w, http.StatusOK, questionOptions)
 }
 
 func UpdateQuestionOption(w http.ResponseWriter, r *http.Request) {

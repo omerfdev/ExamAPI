@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types\models.go"
+"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
-func GetExams(w http.ResponseWriter, r *http.Request) {
+func CreateExam(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var exams []Exam
-	db.Find(&exams)
+	var exam Exam
+	json.NewDecoder(r.Body).Decode(&exam)
 
-	respondWithJson(w, http.StatusOK, exams)
+	db.Create(&exam)
+
+	respondWithJson(w, http.StatusCreated, exam)
 }
 
 func GetExam(w http.ResponseWriter, r *http.Request) {
@@ -30,15 +32,13 @@ func GetExam(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, exam)
 }
 
-func CreateExam(w http.ResponseWriter, r *http.Request) {
+func GetExams(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var exam Exam
-	json.NewDecoder(r.Body).Decode(&exam)
+	var exams []Exam
+	db.Find(&exams)
 
-	db.Create(&exam)
-
-	respondWithJson(w, http.StatusCreated, exam)
+	respondWithJson(w, http.StatusOK, exams)
 }
 
 func UpdateExam(w http.ResponseWriter, r *http.Request) {

@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types\models.go"
+"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
-func GetQuestions(w http.ResponseWriter, r *http.Request) {
+func CreateQuestion(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var questions []Question
-	db.Find(&questions)
+	var question Question
+	json.NewDecoder(r.Body).Decode(&question)
 
-	respondWithJson(w, http.StatusOK, questions)
+	db.Create(&question)
+
+	respondWithJson(w, http.StatusCreated, question)
 }
 
 func GetQuestion(w http.ResponseWriter, r *http.Request) {
@@ -30,15 +32,13 @@ func GetQuestion(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, question)
 }
 
-func CreateQuestion(w http.ResponseWriter, r *http.Request) {
+func GetQuestions(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var question Question
-	json.NewDecoder(r.Body).Decode(&question)
+	var questions []Question
+	db.Find(&questions)
 
-	db.Create(&question)
-
-	respondWithJson(w, http.StatusCreated, question)
+	respondWithJson(w, http.StatusOK, questions)
 }
 
 func UpdateQuestion(w http.ResponseWriter, r *http.Request) {
