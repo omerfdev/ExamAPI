@@ -1,12 +1,7 @@
-package main
+package model
 
 import (
-	"net/http"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 type BaseEntity struct {
@@ -34,15 +29,15 @@ type QuestionOption struct {
 	OptionText string `json:"option_text"`
 	IsCorrect  bool   `json:"is_correct"`
 	Question   Question
-	QuestionID  uint `json:"question_id"`
+	QuestionID uint `json:"question_id"`
 }
 
 type User struct {
 	BaseEntity
-	Name     string `gorm:"type:varchar(100);unique_index" json:"name"`
-	Surname  string `gorm:"type:varchar(100);unique_index" json:"surname"`
-	Email    string `gorm:"type:varchar(100);unique_index" json:"email"`
-	Title    string `json:"title"`
+	Name      string     `gorm:"type:varchar(100);unique_index" json:"name"`
+	Surname   string     `gorm:"type:varchar(100);unique_index" json:"surname"`
+	Email     string     `gorm:"type:varchar(100);unique_index" json:"email"`
+	Title     string     `json:"title"`
 	UserExams []UserExam `json:"user_exams,omitempty"`
 }
 
@@ -68,4 +63,3 @@ type Exam struct {
 	Users            []User     `json:"users,omitempty"`
 	UserExams        []UserExam `json:"user_exams,omitempty"`
 }
-

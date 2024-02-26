@@ -2,9 +2,9 @@ package main
 
 import (
 	"time"
-	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Handler"
+	"C:\Users\omerf\OneDrive\Desktop\exam-api\Handler"
 	"github.com/gorilla/mux"
-	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\pkg\Utils\helper.go"
+	"C:\Users\omerf\OneDrive\Desktop\exam-api\pkg\Utils\helper.go"
 )
 
 
@@ -13,7 +13,7 @@ func main() {
 	r := mux.NewRouter()
 	env := utils.GetGoEnv()
 
-	fmt.Println("Producer API running on \"" + env + "\" environment.")
+	fmt.Println("Exam API running on \"" + env + "\" environment.")
 	producer.Execute(env)
 
 	r.HandleFunc("/questions", getQuestions).Methods("GET")

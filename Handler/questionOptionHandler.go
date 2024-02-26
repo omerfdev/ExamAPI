@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types"
+	"exam-api/model"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
@@ -12,7 +12,7 @@ import (
 func CreateQuestionOption(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var questionOption QuestionOption
+	var questionOption model.QuestionOption
 	json.NewDecoder(r.Body).Decode(&questionOption)
 
 	db.Create(&questionOption)
@@ -26,7 +26,7 @@ func GetQuestionOption(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var questionOption QuestionOption
+	var questionOption model.QuestionOption
 	db.First(&questionOption, id)
 
 	respondWithJson(w, http.StatusOK, questionOption)
@@ -35,7 +35,7 @@ func GetQuestionOption(w http.ResponseWriter, r *http.Request) {
 func GetQuestionOptions(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var questionOptions []QuestionOption
+	var questionOptions []model.QuestionOption
 	db.Find(&questionOptions)
 
 	respondWithJson(w, http.StatusOK, questionOptions)
@@ -47,7 +47,7 @@ func UpdateQuestionOption(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var questionOption QuestionOption
+	var questionOption model.QuestionOption
 	json.NewDecoder(r.Body).Decode(&questionOption)
 
 	db.First(&questionOption, id)
@@ -62,7 +62,7 @@ func DeleteQuestionOption(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var questionOption QuestionOption
+	var questionOption model.QuestionOption
 	db.First(&questionOption, id)
 	db.Delete(&questionOption)
 
@@ -75,3 +75,4 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	w.WriteHeader(code)
 	w.Write(response)
 }
+ 

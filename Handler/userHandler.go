@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types\models.go"
+	"exam-api/model"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
@@ -12,7 +12,7 @@ import (
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var users []User
+	var users []model.User
 	db.Find(&users)
 
 	respondWithJson(w, http.StatusOK, users)
@@ -24,7 +24,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var user User
+	var user model.User
 	db.First(&user, id)
 
 	respondWithJson(w, http.StatusOK, user)
@@ -33,7 +33,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var user User
+	var user model.User
 	json.NewDecoder(r.Body).Decode(&user)
 
 	db.Create(&user)
@@ -47,7 +47,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var user User
+	var user model.User
 	json.NewDecoder(r.Body).Decode(&user)
 
 	db.First(&user, id)
@@ -62,7 +62,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var user User
+	var user model.User
 	db.First(&user, id)
 	db.Delete(&user)
 

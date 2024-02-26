@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"exam-api/model"
 	"net/http"
 	"strconv"
-"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types"
+
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
@@ -12,7 +13,7 @@ import (
 func CreateQuestion(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var question Question
+	var question model.Question
 	json.NewDecoder(r.Body).Decode(&question)
 
 	db.Create(&question)
@@ -26,7 +27,7 @@ func GetQuestion(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var question Question
+	var question model.Question
 	db.First(&question, id)
 
 	respondWithJson(w, http.StatusOK, question)
@@ -35,7 +36,7 @@ func GetQuestion(w http.ResponseWriter, r *http.Request) {
 func GetQuestions(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var questions []Question
+	var questions []model.Question
 	db.Find(&questions)
 
 	respondWithJson(w, http.StatusOK, questions)
@@ -47,7 +48,7 @@ func UpdateQuestion(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var question Question
+	var question model.Question
 	json.NewDecoder(r.Body).Decode(&question)
 
 	db.First(&question, id)
@@ -62,7 +63,7 @@ func DeleteQuestion(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var question Question
+	var question model.Question
 	db.First(&question, id)
 	db.Delete(&question)
 

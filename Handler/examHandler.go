@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"exam-api/model"
 	"net/http"
 	"strconv"
-"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types"
+
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
@@ -12,7 +13,7 @@ import (
 func CreateExam(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var exam Exam
+	var exam model.Exam
 	json.NewDecoder(r.Body).Decode(&exam)
 
 	db.Create(&exam)
@@ -26,7 +27,7 @@ func GetExam(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var exam Exam
+	var exam model.Exam
 	db.First(&exam, id)
 
 	respondWithJson(w, http.StatusOK, exam)
@@ -35,7 +36,7 @@ func GetExam(w http.ResponseWriter, r *http.Request) {
 func GetExams(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var exams []Exam
+	var exams []model.Exam
 	db.Find(&exams)
 
 	respondWithJson(w, http.StatusOK, exams)
@@ -47,7 +48,7 @@ func UpdateExam(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var exam Exam
+	var exam model.Exam
 	json.NewDecoder(r.Body).Decode(&exam)
 
 	db.First(&exam, id)
@@ -62,7 +63,7 @@ func DeleteExam(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var exam Exam
+	var exam model.Exam
 	db.First(&exam, id)
 	db.Delete(&exam)
 

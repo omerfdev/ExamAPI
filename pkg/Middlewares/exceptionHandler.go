@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\pkg\Error"
+	"C:\Users\omerf\OneDrive\Desktop\exam-api\pkg\Error"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )

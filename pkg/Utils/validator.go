@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"ExamAPI//Types"
-	"ExamAPI/Error/errors"
+	"exam-api/Error/errors"
 	"fmt"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
@@ -36,7 +36,7 @@ func ValidateRequest(ctx echo.Context, request interface{}) (result interface{},
 	return request, nil
 }
 
-func producerValidations(sl validator.StructLevel){
+func producerValidations(sl validator.StructLevel) {
 	model := sl.Current().Interface().(types.SendProductsRequest)
 
 	for i := 0; i < len(model); i++ {

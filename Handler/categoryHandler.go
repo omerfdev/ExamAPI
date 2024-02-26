@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"exam-api/model"
 	"net/http"
 	"strconv"
-	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Types\models.go"
+
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
@@ -12,7 +13,7 @@ import (
 func GetCategories(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var categories []Category
+	var categories []model.Category
 	db.Find(&categories)
 
 	respondWithJson(w, http.StatusOK, categories)
@@ -24,7 +25,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var category Category
+	var category model.Category
 	db.First(&category, id)
 
 	respondWithJson(w, http.StatusOK, category)
@@ -33,7 +34,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request) {
 func CreateCategory(w http.ResponseWriter, r *http.Request) {
 	db := r.Context().Value("db").(*gorm.DB)
 
-	var category Category
+	var category model.Category
 	json.NewDecoder(r.Body).Decode(&category)
 
 	db.Create(&category)
@@ -47,7 +48,7 @@ func UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var category Category
+	var category model.Category
 	json.NewDecoder(r.Body).Decode(&category)
 
 	db.First(&category, id)
@@ -62,7 +63,7 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["id"])
 
-	var category Category
+	var category model.Category
 	db.First(&category, id)
 	db.Delete(&category)
 
