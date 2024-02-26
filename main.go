@@ -2,80 +2,19 @@ package main
 
 import (
 	"time"
-"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Handler"
+	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\Handler"
 	"github.com/gorilla/mux"
+	"C:\Users\omerf\OneDrive\Desktop\ExamAPI\pkg\Utils\helper.go"
 )
 
-type BaseEntity struct {
-	ID         int       `json:"id"`
-	CreateDate time.Time `json:"create_date"`
-	UpdateDate time.Time `json:"update_date,omitempty"`
-	DeleteDate time.Time `json:"delete_date,omitempty"`
-	IsActive   bool      `json:"is_active"`
-}
 
-type Category struct {
-	BaseEntity
-	CategoryName string `json:"category_name"`
-	Exams        []Exam `json:"exams,omitempty"`
-}
-
-type Question struct {
-	BaseEntity
-	QuestionType    QuestionType     `json:"question_type"`
-	QuestionText    string           `json:"question_text"`
-	AnswerText      string           `json:"answer_text,omitempty"`
-	QuestionOptions []QuestionOption `json:"question_options,omitempty"`
-	Exam            Exam             `json:"exam,omitempty"`
-}
-
-type QuestionOption struct {
-	BaseEntity
-	OptionText   string   `json:"option_text"`
-	IsTrueOption bool     `json:"is_true_option"`
-	Question     Question `json:"question,omitempty"`
-}
-
-type User struct {
-	BaseEntity
-	Name      string     `json:"name"`
-	Surname   string     `json:"surname"`
-	Email     string     `gorm:"type:varchar(100);unique_index" json:"email"`
-	Title     string     `json:"title"`
-	UserExams []UserExam `json:"user_exams,omitempty"`
-	Exam      Exam       `json:"exam,omitempty"`
-}
-
-type UserExam struct {
-	BaseEntity
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date,omitempty"`
-	Score     int       `json:"score,omitempty"`
-	User      User      `json:"user,omitempty"`
-	Exam      Exam      `json:"exam,omitempty"`
-}
-
-type Exam struct {
-	BaseEntity
-	ExamName         string     `json:"exam_name"`
-	Duration         int        `json:"duration"`
-	Description      string     `json:"description"`
-	AchievementScore int        `json:"achievement_score,omitempty"`
-	Category         Category   `json:"category,omitempty"`
-	Questions        []Question `json:"questions,omitempty"`
-	Users            []User     `json:"users,omitempty"`
-	UserExams        []UserExam `json:"user_exams,omitempty"`
-}
-
-type QuestionType int
-
-const (
-	MultipleChoice QuestionType = iota
-	OpenEnded
-)
 
 func main() {
 	r := mux.NewRouter()
+	env := utils.GetGoEnv()
+
+	fmt.Println("Producer API running on \"" + env + "\" environment.")
+	producer.Execute(env)
 
 	r.HandleFunc("/questions", getQuestions).Methods("GET")
 	r.HandleFunc("/questions/{id}", getQuestion).Methods("GET")
